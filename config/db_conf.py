@@ -1,10 +1,10 @@
-from fastapi import HTTPException
+
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 #创建异步数据库引擎
-url = "mysql+aiomysql://root:mysql@host:3306/news_app?charset=utf8mb4"
-engine = create_async_engine(url)
-create_async_engine(
+url = "mysql+aiomysql://root:mysql@127.0.0.1:3306/news_app?charset=utf8mb4"
+
+engine=create_async_engine(
     url=url,
     echo=True,
     pool_size=10,
@@ -21,6 +21,6 @@ async def get_db():
             await db.commit()
         except Exception as e:
             await db.rollback()
-            raise HTTPException(status_code=500, detail=str(e))
+            raise
         finally:
             await db.close()
