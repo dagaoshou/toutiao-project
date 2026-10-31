@@ -1,5 +1,5 @@
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query,HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.db_conf import get_db
@@ -38,23 +38,23 @@ async def get_news_list(db:AsyncSession=Depends(get_db),
 async def get_news_detail(db:AsyncSession=Depends(get_db),news_id:int=Query(...,alias="id")):
     new_detail=await news.get_news_detail(db,news_id)
     if not new_detail:
-        return{
-            "code":404,
-            "message":"新闻详情不存在!"
-        }
-    else:
-        return{
-            "code":200,
-            "message":"返回新闻详情成功!",
-            "data": {
-                "id": new_detail.id,
-                "title": new_detail.title,
-                "content": new_detail.content,
-                "image": new_detail.image,
-                "author": new_detail.author,
-                "publishTime": new_detail.publish_time,
-                "categoryId": new_detail.category_id,
-                "views": new_detail.views,
-                "relatedNews": []
+        raise HTTPException(status_code=404, detail="新闻详情不存在!")
+    views=await news.update_news_view_count(db,news_id)
+    if not views:
+        raise HTTPException(status_code=404, detail="更新新闻浏览量失败!")
+    related_news=await news.get_related_news(db,news_id)
+    return{
+        "code":200,
+        "message":"返回新闻详情成功!",
+        "data": {
+            "id": new_detail.id,
+            "title": new_detail.title,
+            "content": new_detail.content,
+            "image": new_detail.image,
+            "author": new_detail.author,
+            "publishTime": new_detail.publish_time,
+            "categoryId": new_detail.category_id,
+            "views": new_detail.views,
+            "relatedNews": related_news
   }
     }

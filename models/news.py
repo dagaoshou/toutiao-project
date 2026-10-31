@@ -23,7 +23,7 @@ class News(Base):
     __tablename__ = "news"
     #创建索引，增加查询速度
     __table_args__ = (
-        Index("idx_category_id", "category_id"),
+        Index("fk_news_category_idx", "category_id"),
         Index("idx_publish_time", "publish_time"),
     )
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="新闻ID")

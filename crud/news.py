@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update
 from models.news import Category, News
 
 
@@ -27,3 +27,31 @@ async def get_news_detail(db:AsyncSession,news_id:int):
     stmt=select(News).where(News.id==news_id)
     result=await db.execute(stmt)
     return result.scalar_one_or_none()
+#增加新闻浏览量
+async def update_news_view_count(db:AsyncSession,news_id:int):
+    stmt=update(News).where(News.id==news_id).values(views=News.views+1)
+    result=await db.execute(stmt)
+    if result.rowcount>0:
+        return True
+    return False
+#获取相关信息
+async def get_related_news(db:AsyncSession,news_id:int):
+    new_detail=await get_news_detail(db,news_id)
+    stmt=select(News).where(
+        (News.category_id==new_detail.category_id)&
+        (News.id!=news_id)).order_by(
+        News.views.desc(),
+        News.publish_time.desc()
+    ).limit(5)
+    result=await db.execute(stmt)
+    news_list=result.scalars().all()
+    return [{
+        "id": new.id,
+        "title": new.title,
+        "content": new.content,
+        "image": new.image,
+        "author": new.author,
+        "publishTime": new.publish_time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "categoryId": new.category_id,
+        "views": new.views,
+    }for new in news_list]
