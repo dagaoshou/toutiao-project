@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import Column, Integer, String, Text, DateTime,ForeignKey,Index
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 #创建基类
@@ -16,4 +16,28 @@ class Category(Base):
     name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, comment="分类名称")
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False, comment="排序")
     def __repr__(self):
-        return f"<Category id={self.id} name={self.name!r} sort_order={self.sort_order}>"
+        return f"<Category id={self.id} name={self.name} sort_order={self.sort_order}>"
+
+#创建新闻类模型
+class News(Base):
+    __tablename__ = "news"
+    #创建索引，增加查询速度
+    __table_args__ = (
+        Index("idx_category_id", "category_id"),
+        Index("idx_publish_time", "publish_time"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="新闻ID")
+    title: Mapped[str] = mapped_column(String(255), nullable=False, comment="新闻标题")
+    description: Mapped[str | None] = mapped_column(String(500), comment="新闻简介")
+    content: Mapped[str] = mapped_column(Text, nullable=False, comment="新闻内容")
+    image: Mapped[str | None] = mapped_column(String(255), comment="封面图片URL")
+    author: Mapped[str | None] = mapped_column(String(50), comment="作者")
+    category_id: Mapped[int] = mapped_column(Integer,
+                                             ForeignKey("news_category.id", ondelete="RESTRICT", onupdate="CASCADE"),
+                                             nullable=False, index=True, comment="分类ID")
+    views: Mapped[int] = mapped_column(Integer, default=0, nullable=False, comment="浏览量")
+    publish_time: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, nullable=False, index=True,
+                                                   comment="发布时间")
+
+    def __repr__(self):
+        return f"<News id={self.id} title={self.title} category_id={self.category_id} views={self.views}>"
