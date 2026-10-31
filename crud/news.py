@@ -22,3 +22,8 @@ async def get_news_count(db:AsyncSession,category_id:int):
 async def get_news_exists(db:AsyncSession,category_id:int,skip:int=0,limit:int=10):
     total=await get_news_count(db,category_id)
     return skip+limit<total
+#查询新闻详细信息
+async def get_news_detail(db:AsyncSession,news_id:int):
+    stmt=select(News).where(News.id==news_id)
+    result=await db.execute(stmt)
+    return result.scalar_one_or_none()
