@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils import security
 from models.users import User, UserToken
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from schemas.users import UserRequest
 import uuid
@@ -34,8 +34,14 @@ async def create_token(db:AsyncSession,user_id):
     if user_token:
         user_token.token=token
         user_token.expires_at=expires_at
-    user_token=UserToken(user_id=user_id,token=token,expires_at=expires_at)
-    db.add(user_token)
-    await db.commit()
-    await db.refresh(user_token)
+        #跟新到数据库中
+        stmt=update(UserToken).where(UserToken.user_id == user_id).values(token=token,expires_at=expires_at)
+        await db.execute(stmt)
+        await db.commit()
+        await db.refresh(user_token)
+    else:
+        user_token=UserToken(user_id=user_id,token=token,expires_at=expires_at)
+        db.add(user_token)
+        await db.commit()
+        await db.refresh(user_token)
     return token
