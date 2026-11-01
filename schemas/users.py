@@ -6,7 +6,9 @@ from pydantic import BaseModel, Field, ConfigDict
 class UserRequest(BaseModel):
     username:str
     password:str
-
+class PasswordUpdateRequest(BaseModel):
+    old_password: str=Field(...,alias="oldPassword")
+    new_password: str=Field(...,alias="newPassword")
 class UserInfoBase(BaseModel):
  """
  ⽤户信息基础数据模型
@@ -39,3 +41,9 @@ class UserAuthResponse(BaseModel):
         populate_by_name=True, # alias/字段名兼容
         from_attributes=True # 允许从ORM属性取值
     )
+class UserUpdateRequest(BaseModel):
+    nickname: Optional[str] = Field(None, max_length=50, description="昵称")
+    avatar: Optional[str] = Field(None, max_length=255, description="头像URL")
+    gender: Optional[str] = Field(None, max_length=10, description="性别")
+    bio: Optional[str] = Field(None, max_length=500, description="个⼈简介")
+    phone: Optional[str] = Field(None, max_length=20, description="电话号码")
