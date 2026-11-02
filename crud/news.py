@@ -1,18 +1,35 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
+from crud.news_cache import get_cache_category, NEWS_CATEGORY, set_cache_category, get_cache_list, set_cache_list
 from models.news import Category, News
 
 
 #查询新闻分类列表
 async def get_category_list(db:AsyncSession,skip:int=0,limit:int=100):
+    #redis查：
+    news_list = await get_cache_category()
+    if news_list:
+        return news_list
     stmt=select(Category).offset(skip).limit(limit)
     result=await db.execute(stmt)
-    return result.scalars().all()
+    categories=result.scalars().all()
+    if categories:
+        await set_cache_category(categories)
+    return categories
+
 #查询指定新闻类别列表
 async def get_news_list_by_category(db:AsyncSession,category_id:int,skip:int=0,limit:int=10):
+    page=skip//limit+1
+    #查redis：
+    news_list = await get_cache_list(category_id,page, limit)
+    if news_list:
+        return news_list
     stmt=select(News).where(News.category_id==category_id).offset(skip).limit(limit)
     result=await db.execute(stmt)
-    return result.scalars().all()
+    news_list = result.scalars().all()
+    if news_list:
+        await set_cache_list(news_list,category_id,page,limit)
+    return news_list
 #查询指定新闻个数
 async def get_news_count(db:AsyncSession,category_id:int):
     stmt=select(func.count(News.id)).where(News.category_id==category_id)

@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.db_conf import get_db
 from crud.news import get_category_list,get_news_list_by_category, get_news_count, get_news_exists
-from crud import news
+from crud import news,news_cache
 router=APIRouter(prefix='/api/news',tags=['news'])
 #新闻分类路由
 @router.get('/categories')

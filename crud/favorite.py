@@ -19,7 +19,7 @@ async def add_favorite(db:AsyncSession, user_id:int, news_id:int):
     await db.refresh(favorite_data)
     return favorite_data
 
-
+#删除收藏
 async def remove_favorite(db:AsyncSession, user_id, news_id):
     stmt=delete(Favorite).where((Favorite.user_id==user_id) & (Favorite.news_id==news_id))
     result=await db.execute(stmt)
@@ -35,6 +35,8 @@ async def get_favorite_list(db:AsyncSession,user_id:int, offset, limit):
          .join(Favorite,Favorite.news_id==News.id)
          .where(Favorite.user_id==user_id)
          .order_by(Favorite.created_at.desc())
+         .offset(offset)
+         .limit(limit)
          )
    result=await db.execute(stmt)
    return result.all(),total
