@@ -14,8 +14,8 @@ export const aiChatConfig = {
   apiEndpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
   
   // API Key (由开发人员指定)
-  apiKey: 'sk-9c4d89982a6a4bd3b7494d94751fe81c',
+  apiKey: 'sk-ws-H.YLLPHXE.C42z.MEUCIQCI-_70yz1G1g0R8ON_W2zsmxkzX9JydyuxQOMKezHo6gIgPl_iBxybHl7JwBl_XYrGiy16cyV29tVatd-VsntuMV8',
   
   // 使用的模型
-  model: 'qwen3-max-preview'
+  model: 'qwen3.8-max'
 }
