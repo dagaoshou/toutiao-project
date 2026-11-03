@@ -1,9 +1,11 @@
-from datetime import datetime, timedelta
+
 from fastapi import HTTPException
 
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from crud.token_cache import set_cache_token, get_cache_token
 from utils import security
-from models.users import User, UserToken
+from models.users import User
 from sqlalchemy import select, update
 
 from schemas.users import UserRequest, UserUpdateRequest
@@ -24,41 +26,21 @@ async def create_user(user_data:UserRequest,db:AsyncSession):
     await db.commit()
     await db.refresh(user)
     return user
-#创建token
-async def create_token(db:AsyncSession,user_id):
+#创建token 存入Redis，TTL由Redis自动管理，不再写数据库user_token表
+async def create_token(user_id):
     #生成token
-    token=str(uuid.uuid4())
-    expires_at = datetime.now() + timedelta(days=1)
-    stmt=select(UserToken).where(UserToken.user_id == user_id)
-    result=await db.execute(stmt)
-    user_token=result.scalar_one_or_none()
-    if user_token:
-        user_token.token=token
-        user_token.expires_at=expires_at
-        #跟新到数据库中
-        stmt=update(UserToken).where(UserToken.user_id == user_id).values(token=token,expires_at=expires_at)
-        await db.execute(stmt)
-        await db.commit()
-        await db.refresh(user_token)
-    else:
-        user_token=UserToken(user_id=user_id,token=token,expires_at=expires_at)
-        db.add(user_token)
-        await db.commit()
-        await db.refresh(user_token)
+    token = str(uuid.uuid4())
+    await set_cache_token(token, user_id)
     return token
-#根据token查询用户信息
-async def get_user_by_token(token: str,db:AsyncSession):
-    stmt=select(UserToken).where(UserToken.token == token)
-    result=await db.execute(stmt)
-    user_token=result.scalar_one_or_none()
-    if not user_token or user_token.expires_at < datetime.now():
+
+#根据token查询用户信息（Redis校验令牌有效性，用户信息回源数据库保证实时）
+async def get_user_by_token(token: str, db: AsyncSession):
+    data = await get_cache_token(token)
+    if not data:
         return None
-    stmt=select(User).where(User.id == user_token.user_id)
-    result=await db.execute(stmt)
-    user=result.scalar_one_or_none()
-    if not user:
-        return None
-    return user
+    stmt = select(User).where(User.id == data["user_id"])
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
 
 #跟新用户信息,
 async def update_user(user_data:UserUpdateRequest, username, db:AsyncSession):

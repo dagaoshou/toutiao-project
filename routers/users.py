@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Header
 from fastapi.params import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from config.db_conf import get_db
+from crud.token_cache import delete_cache_token
 from schemas.users import UserRequest, UserAuthResponse, UserInfoResponse, UserUpdateRequest, PasswordUpdateRequest
 from crud import users
 from utils.auth import get_current_user
@@ -22,7 +23,7 @@ async def user_register(user_data:UserRequest,db:AsyncSession=Depends(get_db)):
     #注册用户
     new_user=await users.create_user(user_data,db)
     #生成token
-    token=await users.create_token(db,new_user.id)
+    token=await users.create_token(new_user.id)
     if new_user:
         response_data=UserAuthResponse(token=token,user_info=UserInfoResponse.model_validate(new_user))
         return success_response(messages="注册成功!",data=response_data)
@@ -36,7 +37,7 @@ async def user_login(user_data:UserRequest,db:AsyncSession=Depends(get_db)):
         raise HTTPException(status_code=400,detail="用户不存在!")
     if not security.verify_password(user_data.password,user.password):
         raise HTTPException(status_code=400,detail="密码错误!")
-    token=await users.create_token(db,user.id)
+    token=await users.create_token(user.id)
     response_data=UserAuthResponse(token=token,user_info=UserInfoResponse.model_validate(user))
     return success_response(messages="登录成功!",data=response_data)
 
@@ -77,3 +78,11 @@ async def update_user_password(
     if not result:
         raise HTTPException(status_code=500,detail="修改密码失败!")
     return success_response(messages="密码修改成功")
+# ... existing code ...
+#用户登出（删除Redis中的token，实现立即失效）
+@router.post("/logout")
+async def user_logout(authorization: str = Header(..., alias="Authorization")):
+    token = authorization
+    await delete_cache_token(token)
+    return success_response(messages="登出成功!")
+# ... existing code ...

@@ -94,7 +94,23 @@ export const useUserStore = defineStore('user', {
       }
     },
     
-    logout() {
+     async logout() {
+      const token = this.token;
+      if (token) {
+        try {
+          await axios.post(
+            `${apiConfig.baseURL}/api/user/logout`,
+            null,
+            {
+              headers: {
+                Authorization: token
+              }
+            }
+          );
+        } catch (error) {
+          console.error('登出请求失败:', error);
+        }
+      }
       this.userInfo = null;
       this.token = '';
       this.isLogin = false;
